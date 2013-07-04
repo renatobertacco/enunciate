@@ -327,6 +327,46 @@ public class ResourceMethod extends DecoratedMethodDeclaration {
 
     return null;
   }
+  
+  /**
+   * Patch for support documentation of custom parameter annotation
+   * @param jd
+   * @return
+   */
+  protected HashMap<String, String> parseParamComments(String paramAnnotation, JavaDoc jd) {
+      HashMap<String, String> paramComments = new HashMap<String, String>();
+      if (jd.get(paramAnnotation) != null) {
+          for (String paramDoc : jd.get(paramAnnotation)) {
+              paramDoc = paramDoc.replaceAll("\\s", " ");
+              int spaceIndex = paramDoc.indexOf(' ');
+              if (spaceIndex == -1) {
+                  spaceIndex = paramDoc.length();
+              }
+
+              String param = paramDoc.substring(0, spaceIndex);
+              String paramComment = "";
+              if ((spaceIndex + 1) < paramDoc.length()) {
+                  paramComment = paramDoc.substring(spaceIndex + 1);
+              }
+
+              paramComments.put(param, paramComment);
+          }
+      }
+      return paramComments;
+  }
+  /**
+   * Finds comments for both @parm and @RSParam
+   * @param jd
+   * @return
+   */
+  protected HashMap<String, String> parseAllParamComments(JavaDoc jd) {
+      HashMap<String, String> paramRESTComments = parseParamComments("RSParam", jd);
+      HashMap<String, String> paramComments = parseParamComments("param", jd);
+      paramComments.putAll(paramRESTComments);
+      return paramComments;
+
+  }
+
 
   /**
    * Loads the overridden resource parameter values.
@@ -335,7 +375,8 @@ public class ResourceMethod extends DecoratedMethodDeclaration {
    * @return The explicit resource parameters.
    */
   protected List<ResourceParameter> loadResourceParameters(ResourceMethodSignature signatureOverride) {
-    HashMap<String, String> paramComments = parseParamComments(getJavaDoc());
+      HashMap<String, String> paramComments = parseAllParamComments(getJavaDoc());
+//    HashMap<String, String> paramComments = parseParamComments(getJavaDoc());
     
     ArrayList<ResourceParameter> params = new ArrayList<ResourceParameter>();
     for (CookieParam cookieParam : signatureOverride.cookieParams()) {
